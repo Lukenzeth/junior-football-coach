@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="description" content="Free training drill app for junior football coaches. 60+ drills with YouTube tutorials.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Football Coach">
+  <title>Junior Football Coach - Training Drills</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+    .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    // Helper function to create YouTube search URL
+    const createYouTubeSearchUrl = (searchTerms) => {
+      const query = encodeURIComponent(searchTerms);
+      return `https://www.youtube.com/results?search_query=${query}`;
+    };
+
+    // Drill database with 60 drills
+    const drillsDatabase = [
+      // ATTACKING DRILLS - SHOOTING
+      { id: 1, name: "1v1 to Goal", category: "attack", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "10-15 mins", players: "4-12", difficulty: "beginner", ageGroup: "U6+", description: "Players take turns attacking a defender to score. Great for building confidence in 1v1 situations.", setup: "Set up a 15x20m area with a goal. One defender starts on the goal line, attacker starts with ball at opposite end.", coaching: ["Encourage players to commit the defender", "Use feints and changes of pace", "Shoot when you see the goal"], youtubeSearch: "1v1 soccer finishing drill youth" },
+      { id: 2, name: "Shooting Carousel", category: "attack", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "12-15 mins", players: "6-12", difficulty: "intermediate", ageGroup: "U9+", description: "Continuous shooting drill from different angles. Keeps all players active and working.", setup: "Set up 3 stations around the penalty area. Players rotate through each shooting position.", coaching: ["Plant foot pointing at target", "Keep head over the ball", "Follow up for rebounds"], youtubeSearch: "soccer shooting rotation drill coaching" },
+      { id: 3, name: "Turn and Shoot", category: "attack", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "10-12 mins", players: "4-10", difficulty: "intermediate", ageGroup: "U9+", description: "Receive with back to goal, turn and shoot. Essential striker movement.", setup: "Player at edge of box receives ball from server, turns and shoots.", coaching: ["Check shoulder before receiving", "First touch sets up shot", "Quick release"], youtubeSearch: "turn and shoot soccer drill striker" },
+      { id: 4, name: "Volley Practice", category: "attack", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "10-15 mins", players: "4-8", difficulty: "advanced", ageGroup: "U11+", description: "Players practice volleys from crosses and lofted passes.", setup: "Server crosses from wide, striker attacks ball in the air.", coaching: ["Keep eye on ball", "Lock ankle", "Lean over the ball"], youtubeSearch: "soccer volley finishing technique drill" },
+      { id: 5, name: "Quick Fire Finishing", category: "attack", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "8-10 mins", players: "4-8", difficulty: "intermediate", ageGroup: "U9+", description: "Rapid succession of shots to improve reaction finishing.", setup: "Multiple balls served quickly to striker who must finish each one.", coaching: ["Stay on your toes", "React quickly", "Any finish counts"], youtubeSearch: "quick fire finishing soccer drill" },
+      { id: 6, name: "Finishing Under Pressure", category: "attack", subcategory: "shooting", equipment: ["cones", "goals", "balls", "bibs"], duration: "15-20 mins", players: "6-12", difficulty: "advanced", ageGroup: "U12+", description: "Realistic finishing scenarios with defensive pressure and time constraints.", setup: "Attackers receive in box with defender closing. Must finish within 2 touches.", coaching: ["Composure under pressure", "Pick your spot early", "Use defender as screen"], youtubeSearch: "finishing under pressure soccer training" },
+      // ATTACKING DRILLS - PASSING
+      { id: 7, name: "Give & Go Passing", category: "attack", subcategory: "passing", equipment: ["cones", "balls"], duration: "8-12 mins", players: "6-16", difficulty: "beginner", ageGroup: "U7+", description: "Classic wall pass drill to teach combination play and movement off the ball.", setup: "Set up 3 cones in a triangle, 10m apart. Players work in pairs through the pattern.", coaching: ["Pass to feet", "Move immediately after passing", "Receive on the back foot"], youtubeSearch: "wall pass give and go soccer drill youth" },
+      { id: 8, name: "Rondo 4v2", category: "attack", subcategory: "passing", equipment: ["cones", "balls", "bibs"], duration: "10-15 mins", players: "6-12", difficulty: "intermediate", ageGroup: "U9+", description: "Keep possession in tight spaces. 4 players keep ball from 2 defenders.", setup: "10x10m grid. 4 outside, 2 in middle trying to win ball.", coaching: ["Move to create angles", "One or two touch", "Support the ball carrier"], youtubeSearch: "rondo 4v2 soccer possession drill" },
+      { id: 9, name: "Diamond Passing", category: "attack", subcategory: "passing", equipment: ["cones", "balls"], duration: "10-12 mins", players: "8-16", difficulty: "beginner", ageGroup: "U7+", description: "Pass and move in a diamond shape. Great for warm-up or technique work.", setup: "4 cones in diamond, 8-10m apart. Players pass and follow their pass.", coaching: ["Crisp passes", "Follow your pass immediately", "Call for the ball"], youtubeSearch: "diamond passing pattern soccer drill" },
+      { id: 10, name: "Long Ball Switching", category: "attack", subcategory: "passing", equipment: ["cones", "balls"], duration: "12-15 mins", players: "6-12", difficulty: "intermediate", ageGroup: "U10+", description: "Practice switching play with long diagonal passes.", setup: "Three groups spread across width of pitch. Switch ball from one side to other.", coaching: ["Open body up", "Strike through the ball", "Weight of pass important"], youtubeSearch: "switching play long pass soccer drill" },
+      { id: 11, name: "Third Man Runs", category: "attack", subcategory: "passing", equipment: ["cones", "balls"], duration: "12-15 mins", players: "6-12", difficulty: "advanced", ageGroup: "U11+", description: "Complex passing combination with third man making the penetrating run.", setup: "Groups of 3. Ball played into feet, laid off, third man runs onto through ball.", coaching: ["Timing of run crucial", "Weight of layoff", "Communication"], youtubeSearch: "third man run combination play soccer" },
+      { id: 12, name: "Positional Play 5v3", category: "attack", subcategory: "passing", equipment: ["cones", "balls", "bibs"], duration: "15-20 mins", players: "8-12", difficulty: "advanced", ageGroup: "U12+", description: "Barcelona-style positional rondo focusing on body shape and receiving positions.", setup: "20x15m grid. 5 attackers maintain possession against 3 defenders with positional rules.", coaching: ["Receive on half-turn", "Play forward when possible", "Third man movement"], youtubeSearch: "positional play rondo barcelona style" },
+      // ATTACKING DRILLS - DRIBBLING
+      { id: 13, name: "Cone Dribble Slalom", category: "attack", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "8-10 mins", players: "4-16", difficulty: "beginner", ageGroup: "U6+", description: "Weave through cones to improve close ball control.", setup: "Line of 6-8 cones, 1m apart. Players dribble through and back.", coaching: ["Use both feet", "Keep ball close", "Head up when possible"], youtubeSearch: "cone dribbling slalom soccer drill youth" },
+      { id: 14, name: "1v1 Skills Box", category: "attack", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "10-12 mins", players: "4-12", difficulty: "intermediate", ageGroup: "U8+", description: "Practice skill moves in 1v1 situations in a small grid.", setup: "8x8m grid. Attacker tries to dribble past defender and stop ball on end line.", coaching: ["Commit the defender", "Change of pace", "Use your body"], youtubeSearch: "1v1 dribbling box soccer skills drill" },
+      { id: 15, name: "Speed Dribble Race", category: "attack", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "8-10 mins", players: "4-16", difficulty: "beginner", ageGroup: "U6+", description: "Race while dribbling to combine speed with control.", setup: "Two parallel lanes 20m long. Players race side by side while dribbling.", coaching: ["Push ball ahead", "Longer touches when sprinting", "Control at the end"], youtubeSearch: "speed dribbling race soccer drill kids" },
+      { id: 16, name: "Moves & Skills Circuit", category: "attack", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "15-20 mins", players: "6-16", difficulty: "intermediate", ageGroup: "U9+", description: "Multiple stations practicing different skill moves: step-over, Cruyff turn, etc.", setup: "4-5 stations in a circuit. 2 mins at each, then rotate.", coaching: ["Practice both feet", "Sell the move", "Accelerate after"], youtubeSearch: "soccer skill moves circuit training" },
+      { id: 17, name: "Protect the Ball", category: "attack", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "8-10 mins", players: "4-16", difficulty: "beginner", ageGroup: "U7+", description: "Keep possession under pressure using body to shield ball.", setup: "Small grid, pairs. One shields ball for 30 secs while other tries to win it.", coaching: ["Keep body between defender and ball", "Bend knees, stay low", "Move the ball"], youtubeSearch: "shielding the ball soccer drill youth" },
+      { id: 18, name: "Advanced Skill Moves", category: "attack", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "15-20 mins", players: "4-12", difficulty: "advanced", ageGroup: "U12+", description: "Complex skill moves: elastico, rabona fake, McGeady spin, Berbatov turn.", setup: "Individual practice with cones representing defenders, then apply in 1v1.", coaching: ["Master at slow speed first", "Use when appropriate", "Combine moves"], youtubeSearch: "advanced soccer skills elastico mcgeady spin tutorial" },
+      // ATTACKING DRILLS - MOVEMENT
+      { id: 19, name: "Overlap Attack", category: "attack", subcategory: "movement", equipment: ["cones", "balls", "bibs"], duration: "15-20 mins", players: "8-14", difficulty: "intermediate", ageGroup: "U10+", description: "Teaches wide play and overlapping runs. Builds understanding of width in attack.", setup: "30x20m channel. Attacking pair vs defender with support player making overlapping runs.", coaching: ["Time the overlap run", "Communication is key", "Cross early or cut inside"], youtubeSearch: "overlapping run soccer drill coaching" },
+      { id: 20, name: "Blindside Runs", category: "attack", subcategory: "movement", equipment: ["cones", "balls", "bibs"], duration: "12-15 mins", players: "6-12", difficulty: "advanced", ageGroup: "U11+", description: "Attackers make runs into spaces defenders can't see.", setup: "Half pitch with mannequins or passive defenders. Practice timing runs from blind spots.", coaching: ["Start behind the defender", "Arc your run", "Time it with the pass"], youtubeSearch: "blindside run off the ball movement soccer" },
+      { id: 21, name: "Creating Space", category: "attack", subcategory: "movement", equipment: ["cones", "balls", "bibs"], duration: "12-15 mins", players: "6-10", difficulty: "intermediate", ageGroup: "U9+", description: "Movements to create space for yourself or teammates.", setup: "Grid with attackers and defenders. Practice checking away then coming short.", coaching: ["Movement with purpose", "Check shoulder", "Sharp change of direction"], youtubeSearch: "creating space off ball soccer movement drill" },
+      { id: 22, name: "Attacking Rotations", category: "attack", subcategory: "movement", equipment: ["cones", "balls", "bibs"], duration: "15-20 mins", players: "8-14", difficulty: "advanced", ageGroup: "U12+", description: "Front three interchange positions to confuse defenders.", setup: "Three attackers rotate positions while maintaining width and depth.", coaching: ["Communicate switches", "Fill the space left", "Keep defenders guessing"], youtubeSearch: "attacking rotations front three soccer tactics" },
+      { id: 23, name: "Near Post Run", category: "attack", subcategory: "movement", equipment: ["cones", "goals", "balls"], duration: "10-12 mins", players: "6-12", difficulty: "intermediate", ageGroup: "U10+", description: "Timing runs to the near post from wide crosses.", setup: "Winger crosses, striker makes near post run to flick on or finish.", coaching: ["Start your run late", "Attack the front post", "Be brave"], youtubeSearch: "near post run crossing drill soccer" },
+      { id: 24, name: "False 9 Movement", category: "attack", subcategory: "movement", equipment: ["cones", "balls", "bibs"], duration: "20-25 mins", players: "10-14", difficulty: "advanced", ageGroup: "U13+", description: "Dropping deep as a striker to create overloads and drag defenders out of position.", setup: "11v11 or 9v9 positional game. Striker drops into midfield to receive and turn.", coaching: ["Create space for wingers", "Quick combinations", "Know when to stay high"], youtubeSearch: "false 9 movement soccer tactics training" },
+      // DEFENSIVE DRILLS - INDIVIDUAL
+      { id: 25, name: "Defensive Stance & Jockeying", category: "defense", subcategory: "individual", equipment: ["cones", "balls"], duration: "8-10 mins", players: "4-16", difficulty: "beginner", ageGroup: "U7+", description: "Foundation drill teaching correct defensive body position and footwork.", setup: "Pairs in 10x10m grid. Attacker dribbles slowly, defender practices staying goal-side.", coaching: ["Stay on your toes", "Bend your knees", "Don't dive in - delay and wait"], youtubeSearch: "defensive stance jockeying soccer drill" },
+      { id: 26, name: "1v1 Defending", category: "defense", subcategory: "individual", equipment: ["cones", "goals", "balls"], duration: "12-15 mins", players: "4-12", difficulty: "beginner", ageGroup: "U8+", description: "Teaches players how to win the ball back in individual defending situations.", setup: "15x15m area with small goal to defend. Attacker tries to score, defender wins ball back.", coaching: ["Force attacker to weaker foot", "Get tight when they take a bad touch", "Stay patient"], youtubeSearch: "1v1 defending soccer drill youth" },
+      { id: 27, name: "Recovery Runs", category: "defense", subcategory: "individual", equipment: ["cones", "goals", "balls"], duration: "10-12 mins", players: "6-10", difficulty: "intermediate", ageGroup: "U10+", description: "High intensity drill practicing getting back quickly when beaten.", setup: "Start defenders high, ball played behind. They must recover and stop the attack.", coaching: ["Sprint back first", "Get goal side", "Then engage the attacker"], youtubeSearch: "recovery run defending soccer drill" },
+      { id: 28, name: "Block the Shot", category: "defense", subcategory: "individual", equipment: ["cones", "goals", "balls"], duration: "8-10 mins", players: "4-12", difficulty: "intermediate", ageGroup: "U9+", description: "Practice blocking shots and closing down shooters.", setup: "Defender rushes out to block as attacker receives and shoots.", coaching: ["Close down quickly", "Make yourself big", "Don't turn your back"], youtubeSearch: "shot blocking closing down soccer drill" },
+      { id: 29, name: "Tackling Technique", category: "defense", subcategory: "individual", equipment: ["cones", "balls"], duration: "10-12 mins", players: "4-16", difficulty: "beginner", ageGroup: "U8+", description: "Proper technique for block tackles and poke tackles.", setup: "Pairs facing each other. Practice timing and technique of different tackles.", coaching: ["Stay on feet", "Win the ball, not the player", "Follow through"], youtubeSearch: "tackling technique soccer coaching drill" },
+      { id: 30, name: "Defending in Transition", category: "defense", subcategory: "individual", equipment: ["cones", "balls", "bibs"], duration: "15-20 mins", players: "8-14", difficulty: "advanced", ageGroup: "U12+", description: "Reacting quickly when possession is lost to win ball back or delay attack.", setup: "5v5 game where team losing possession must immediately counter-press.", coaching: ["React in first 3 seconds", "Nearest player presses", "Others cover space"], youtubeSearch: "transition defending counter press soccer" },
+      // DEFENSIVE DRILLS - TEAM
+      { id: 31, name: "Pressing Triggers", category: "defense", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "15-18 mins", players: "8-14", difficulty: "intermediate", ageGroup: "U10+", description: "Team pressing drill teaching when and how to press as a unit.", setup: "25x25m area. 4 attackers try to keep ball, 3 defenders work together to win it.", coaching: ["Press the bad pass", "Cut off passing lanes", "Work as a unit"], youtubeSearch: "pressing triggers soccer coaching drill" },
+      { id: 32, name: "Defensive Shape 4v4", category: "defense", subcategory: "team", equipment: ["cones", "goals", "balls", "bibs"], duration: "15-20 mins", players: "8-12", difficulty: "intermediate", ageGroup: "U10+", description: "Small-sided game focusing on maintaining defensive shape and compactness.", setup: "30x25m with goals. Teams focus on keeping shape when out of possession.", coaching: ["Stay compact", "Communicate constantly", "Shift as a unit"], youtubeSearch: "defensive shape compact soccer drill" },
+      { id: 33, name: "Defensive Line", category: "defense", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "15-20 mins", players: "8-14", difficulty: "advanced", ageGroup: "U11+", description: "Practice holding a defensive line and stepping up together.", setup: "Back 4 practice holding line against 3 attackers with a passer.", coaching: ["Stay in line", "Step up together", "Drop together"], youtubeSearch: "defensive line offside trap soccer drill" },
+      { id: 34, name: "Cover & Balance", category: "defense", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "12-15 mins", players: "6-12", difficulty: "intermediate", ageGroup: "U10+", description: "Defenders learn to cover each other when one presses.", setup: "2v2 or 3v3 grid. When one defender presses, other provides cover.", coaching: ["Don't both press", "Communicate who goes", "Cover the space"], youtubeSearch: "cover and balance defending soccer drill" },
+      { id: 35, name: "Defending Crosses", category: "defense", subcategory: "team", equipment: ["cones", "goals", "balls", "bibs"], duration: "12-15 mins", players: "8-14", difficulty: "intermediate", ageGroup: "U11+", description: "Dealing with crosses into the box - positioning and clearing.", setup: "Winger crosses, defenders must clear under pressure from attackers.", coaching: ["Attack the ball", "First contact important", "Clear with purpose"], youtubeSearch: "defending crosses soccer training drill" },
+      { id: 36, name: "Zonal Marking System", category: "defense", subcategory: "team", equipment: ["cones", "goals", "balls", "bibs"], duration: "20-25 mins", players: "10-16", difficulty: "advanced", ageGroup: "U12+", description: "Defending set pieces with zonal marking - positioning and responsibilities.", setup: "Defend corners and free kicks with each player responsible for a zone.", coaching: ["Know your zone", "Attack ball in your zone", "Be first to the ball"], youtubeSearch: "zonal marking set piece defending soccer" },
+      { id: 37, name: "High Press System", category: "defense", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "20-25 mins", players: "10-16", difficulty: "advanced", ageGroup: "U13+", description: "Coordinated high press from front to force errors and win ball in attacking areas.", setup: "11v11 or 9v9 with focus on pressing triggers and team movement.", coaching: ["Press in packs", "Cut passing lanes", "Force play one direction"], youtubeSearch: "high press gegenpressing soccer tactics training" },
+      // DEFENSIVE DRILLS - GOALKEEPING
+      { id: 38, name: "Shot Stopping Basics", category: "defense", subcategory: "goalkeeping", equipment: ["cones", "goals", "balls"], duration: "10-15 mins", players: "2-4", difficulty: "beginner", ageGroup: "U8+", description: "Basic shot stopping technique and positioning.", setup: "Shots from 12-15m. Keeper practices set position and diving technique.", coaching: ["Get set before shot", "Watch the ball", "Strong hands"], youtubeSearch: "goalkeeper shot stopping basics youth" },
+      { id: 39, name: "Keeper Distribution", category: "defense", subcategory: "goalkeeping", equipment: ["cones", "goals", "balls"], duration: "10-12 mins", players: "2-6", difficulty: "intermediate", ageGroup: "U9+", description: "Practice throws, kicks, and distribution accuracy.", setup: "Keeper distributes to targets at various distances.", coaching: ["Accuracy over power", "Quick release", "Pick the right option"], youtubeSearch: "goalkeeper distribution throwing kicking drill" },
+      { id: 40, name: "1v1 Situations for Keepers", category: "defense", subcategory: "goalkeeping", equipment: ["cones", "goals", "balls"], duration: "12-15 mins", players: "3-6", difficulty: "advanced", ageGroup: "U11+", description: "Dealing with breakaways and 1v1 situations as goalkeeper.", setup: "Attackers run through on goal, keeper must decide when to come out.", coaching: ["Timing of advance", "Make yourself big", "Stay on feet as long as possible"], youtubeSearch: "goalkeeper 1v1 breakaway training drill" },
+      // FUN GAMES - DRIBBLING GAMES
+      { id: 41, name: "Sharks & Minnows", category: "fun", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "8-10 mins", players: "6-20", difficulty: "beginner", ageGroup: "U6+", description: "Classic dribbling game. Sharks try to kick balls out, minnows try to survive!", setup: "Large rectangle (30x20m). All minnows have a ball, 2-3 sharks without balls.", coaching: ["Keep ball close", "Head up to spot sharks", "Change direction quickly"], youtubeSearch: "sharks and minnows soccer game youth" },
+      { id: 42, name: "King of the Ring", category: "fun", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "8-12 mins", players: "6-16", difficulty: "intermediate", ageGroup: "U8+", description: "Last player dribbling wins! Protect your ball while trying to knock others out.", setup: "Large circle (20m diameter). Everyone with a ball inside. Knock others' balls out!", coaching: ["Keep your ball close", "Use your body to shield", "Be aware of surroundings"], youtubeSearch: "king of the ring soccer dribbling game" },
+      { id: 43, name: "Traffic Lights", category: "fun", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "6-8 mins", players: "4-20", difficulty: "beginner", ageGroup: "U6+", description: "Coach calls colors - red (stop), yellow (slow), green (go fast)!", setup: "Open area, all players dribbling. Coach calls colors.", coaching: ["Control at all speeds", "Stop ball dead on red", "Head up"], youtubeSearch: "traffic lights soccer dribbling game kids" },
+      { id: 44, name: "Pac-Man", category: "fun", subcategory: "dribbling", equipment: ["cones", "balls"], duration: "8-10 mins", players: "6-16", difficulty: "beginner", ageGroup: "U7+", description: "Ghosts chase Pac-Man - but everyone must dribble on the lines only!", setup: "Grid of lines. Players dribble on lines only. Taggers try to catch dribblers.", coaching: ["Stay on the lines", "Change direction at junctions", "Look for escape routes"], youtubeSearch: "pac man soccer dribbling game youth" },
+      // FUN GAMES - SHOOTING GAMES
+      { id: 45, name: "World Cup Knockout", category: "fun", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "15-20 mins", players: "6-16", difficulty: "beginner", ageGroup: "U7+", description: "Everyone's favorite! Players represent countries and get eliminated after 3 goals conceded.", setup: "One goal with keeper. Players queue up, take shots in turn. Score to stay alive!", coaching: ["Aim for corners", "Keepers - stay big", "Celebrate like you've won the World Cup!"], youtubeSearch: "world cup knockout soccer shooting game" },
+      { id: 46, name: "Target Goal", category: "fun", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "10-15 mins", players: "4-12", difficulty: "beginner", ageGroup: "U7+", description: "Hit targets in the goal for points. Corners worth most!", setup: "Targets hung in goal corners and spots. Players shoot to hit targets.", coaching: ["Pick your target", "Accuracy over power", "Celebrate big hits!"], youtubeSearch: "target shooting accuracy soccer game" },
+      { id: 47, name: "Goalie Wars", category: "fun", subcategory: "shooting", equipment: ["cones", "goals", "balls"], duration: "10-15 mins", players: "4-8", difficulty: "intermediate", ageGroup: "U8+", description: "Two keepers face off - save then throw/kick to score in opposite goal!", setup: "Two goals facing each other, 20m apart. Keepers try to score on each other.", coaching: ["Quick distribution", "Catch and release", "Watch for keeper off line"], youtubeSearch: "goalie wars goalkeeper game soccer" },
+      // FUN GAMES - TEAM GAMES
+      { id: 48, name: "Numbers Game", category: "fun", subcategory: "team", equipment: ["cones", "goals", "balls", "bibs"], duration: "15-20 mins", players: "8-16", difficulty: "intermediate", ageGroup: "U8+", description: "Coach calls numbers, that many players from each team sprint to play! Chaotic fun.", setup: "30x20m pitch with goals. Teams line up on sidelines, numbered 1 to however many.", coaching: ["React quickly", "Find teammates", "Make fast decisions"], youtubeSearch: "numbers game soccer small sided" },
+      { id: 49, name: "Capture the Balls", category: "fun", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "10-15 mins", players: "8-20", difficulty: "beginner", ageGroup: "U6+", description: "Teams compete to dribble balls from the middle to their corner. Most balls wins!", setup: "Large square with pile of balls in center. Teams start in corners.", coaching: ["Dribble under control", "Quick feet, quick decisions", "Work as a team"], youtubeSearch: "capture the balls soccer game youth" },
+      { id: 50, name: "4 Goal Madness", category: "fun", subcategory: "team", equipment: ["cones", "goals", "balls", "bibs"], duration: "15-20 mins", players: "8-16", difficulty: "beginner", ageGroup: "U7+", description: "4 small goals on each side - score in any of the opposition's goals!", setup: "Square pitch with small goal on each side. Teams defend 2, attack 2.", coaching: ["Switch play", "Find the open goal", "Scan constantly"], youtubeSearch: "4 goal soccer game small sided" },
+      { id: 51, name: "Golden Goal Tournament", category: "fun", subcategory: "team", equipment: ["cones", "goals", "balls", "bibs"], duration: "20-30 mins", players: "12-20", difficulty: "intermediate", ageGroup: "U8+", description: "Mini tournament - first goal wins, losers off, winners stay on!", setup: "Small pitch. 3-min games or first goal wins. Winner stays, new team comes on.", coaching: ["Start fast", "Every chance matters", "Team celebration!"], youtubeSearch: "golden goal tournament soccer youth" },
+      { id: 52, name: "End Zone Game", category: "fun", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "15-20 mins", players: "8-16", difficulty: "beginner", ageGroup: "U7+", description: "No goals - score by stopping ball in the end zone!", setup: "Pitch with end zones instead of goals. Stop ball dead in zone to score.", coaching: ["Width helps", "Patience in attack", "Defend the zone"], youtubeSearch: "end zone soccer game no goals" },
+      { id: 53, name: "Jailbreak", category: "fun", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "10-15 mins", players: "8-20", difficulty: "intermediate", ageGroup: "U8+", description: "Tag game - when tagged you go to jail. Teammates can free you by passing a ball to you!", setup: "Large area with jail zone. Taggers without balls, others dribbling.", coaching: ["Help your teammates", "Accurate passes to free players", "Keep moving"], youtubeSearch: "jailbreak soccer dribbling tag game" },
+      // ADVANCED U12/U13 TACTICAL DRILLS
+      { id: 54, name: "Building from the Back", category: "attack", subcategory: "passing", equipment: ["cones", "balls", "bibs"], duration: "20-25 mins", players: "10-16", difficulty: "advanced", ageGroup: "U12+", description: "Playing out from goalkeeper under pressure. GK to CB to FB to midfield patterns.", setup: "Half pitch. Back 4 + GK vs 3-4 pressers. Progress ball into midfield zone.", coaching: ["GK starts play", "Split the press", "Switch if blocked"], youtubeSearch: "building from the back soccer training" },
+      { id: 55, name: "Transition Play 6v6", category: "attack", subcategory: "movement", equipment: ["cones", "goals", "balls", "bibs"], duration: "20-25 mins", players: "12-16", difficulty: "advanced", ageGroup: "U12+", description: "Quick transitions from defense to attack and vice versa. Game realistic scenarios.", setup: "40x30m pitch. On turnover, team has 8 seconds to score or work ball into attacking zone.", coaching: ["First pass forward", "Sprint to support", "Decision speed"], youtubeSearch: "transition play soccer training drill" },
+      { id: 56, name: "Overloads in Wide Areas", category: "attack", subcategory: "movement", equipment: ["cones", "balls", "bibs"], duration: "18-22 mins", players: "10-14", difficulty: "advanced", ageGroup: "U13+", description: "Creating 2v1 and 3v2 situations in wide areas to break down defenses.", setup: "Wide channel 3v2. Create overload to get cross in or cut inside.", coaching: ["Recognize the overload", "Timing of support runs", "Quality final ball"], youtubeSearch: "creating overloads wide areas soccer tactics" },
+      { id: 57, name: "Counter Attack Pattern", category: "attack", subcategory: "movement", equipment: ["cones", "goals", "balls", "bibs"], duration: "18-22 mins", players: "10-14", difficulty: "advanced", ageGroup: "U12+", description: "Organized counter attacking from deep positions. Speed and directness.", setup: "Full pitch. Defend deep, win ball, break at speed with 3-4 players.", coaching: ["Explode on turnover", "Wide runners stretch play", "Finish the chance"], youtubeSearch: "counter attack pattern soccer training" },
+      { id: 58, name: "Defensive Block 4-4-2", category: "defense", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "20-25 mins", players: "12-16", difficulty: "advanced", ageGroup: "U13+", description: "Maintaining compact defensive shape in 4-4-2 formation against possession team.", setup: "11v11 shadow play then vs opposition. Focus on distances and triggers.", coaching: ["Stay connected", "Shift as a unit", "When to press vs hold"], youtubeSearch: "defensive block 4-4-2 shape soccer tactics" },
+      { id: 59, name: "Pressing Traps", category: "defense", subcategory: "team", equipment: ["cones", "balls", "bibs"], duration: "18-22 mins", players: "10-16", difficulty: "advanced", ageGroup: "U13+", description: "Setting traps to win ball in dangerous areas. Forcing play into pressing zones.", setup: "Show play inside or outside, then spring trap with cover players.", coaching: ["Force predictable pass", "Hunt in packs", "Win ball, attack immediately"], youtubeSearch: "pressing traps soccer tactics training" },
+      { id: 60, name: "Playing Through Midfield", category: "attack", subcategory: "passing", equipment: ["cones", "balls", "bibs"], duration: "20-25 mins", players: "12-16", difficulty: "advanced", ageGroup: "U12+", description: "Combination play to progress through congested central areas.", setup: "Overload in middle third. Work ball from defense to attack via midfield.", coaching: ["Third man runs", "One touch combinations", "Play forward when possible"], youtubeSearch: "playing through midfield soccer possession" }
+    ];
+
+    // Static drill diagram
+    const DrillDiagram = ({ drill }) => {
+      const categoryColors = {
+        attack: { primary: "#3B82F6", secondary: "#1D4ED8" },
+        defense: { primary: "#EF4444", secondary: "#B91C1C" },
+        fun: { primary: "#F59E0B", secondary: "#D97706" }
+      };
+      const colors = categoryColors[drill.category];
+      
+      return (
+        <svg viewBox="0 0 200 120" className="w-full h-full">
+          <defs>
+            <pattern id={`grass-${drill.id}`} patternUnits="userSpaceOnUse" width="20" height="20">
+              <rect width="20" height="20" fill="#22C55E"/>
+              <rect x="0" y="0" width="10" height="20" fill="#16A34A" opacity="0.3"/>
+            </pattern>
+          </defs>
+          <rect x="5" y="5" width="190" height="110" fill={`url(#grass-${drill.id})`} rx="4"/>
+          {drill.equipment.includes('goals') && (
+            <>
+              <rect x="2" y="40" width="6" height="40" fill="white" rx="1"/>
+              <rect x="192" y="40" width="6" height="40" fill="white" rx="1"/>
+            </>
+          )}
+          <circle cx="60" cy="60" r="12" fill={colors.primary} opacity="0.9"/>
+          <circle cx="100" cy="40" r="10" fill={colors.primary} opacity="0.7"/>
+          <circle cx="140" cy="65" r="12" fill={colors.primary} opacity="0.9"/>
+          <circle cx="100" cy="85" r="10" fill="#8B5CF6" opacity="0.7"/>
+          <circle cx="75" cy="60" r="5" fill="#FBBF24" stroke="#D97706" strokeWidth="1"/>
+          <path d="M72 58 L90 45" stroke="white" strokeWidth="2" strokeDasharray="4,2" opacity="0.8"/>
+          <path d="M105 42 L130 60" stroke="white" strokeWidth="2" strokeDasharray="4,2" opacity="0.8"/>
+          {drill.equipment.includes('cones') && (
+            <>
+              <polygon points="40,95 36,105 44,105" fill="#F97316"/>
+              <polygon points="100,95 96,105 104,105" fill="#F97316"/>
+              <polygon points="160,95 156,105 164,105" fill="#F97316"/>
+            </>
+          )}
+        </svg>
+      );
+    };
+
+    // Equipment Icon
+    const EquipmentIcon = ({ type, selected }) => {
+      const icons = {
+        cones: (
+          <svg viewBox="0 0 24 24" className="w-8 h-8">
+            <path d="M12 2L4 22h16L12 2z" fill={selected ? "#F97316" : "#CBD5E1"} stroke={selected ? "#EA580C" : "#94A3B8"} strokeWidth="1.5"/>
+            <path d="M7 14h10M8 18h8" stroke={selected ? "#EA580C" : "#94A3B8"} strokeWidth="1.5"/>
+          </svg>
+        ),
+        balls: (
+          <svg viewBox="0 0 24 24" className="w-8 h-8">
+            <circle cx="12" cy="12" r="10" fill={selected ? "#FBBF24" : "#CBD5E1"} stroke={selected ? "#D97706" : "#94A3B8"} strokeWidth="1.5"/>
+            <circle cx="12" cy="12" r="3" fill={selected ? "#FBBF24" : "#CBD5E1"} stroke={selected ? "#D97706" : "#94A3B8"} strokeWidth="1"/>
+          </svg>
+        ),
+        goals: (
+          <svg viewBox="0 0 24 24" className="w-8 h-8">
+            <rect x="2" y="6" width="20" height="14" fill="none" stroke={selected ? "#10B981" : "#94A3B8"} strokeWidth="2"/>
+            <path d="M6 6v14M18 6v14M2 10h20M2 14h20" stroke={selected ? "#10B981" : "#94A3B8"} strokeWidth="1"/>
+          </svg>
+        ),
+        bibs: (
+          <svg viewBox="0 0 24 24" className="w-8 h-8">
+            <path d="M12 4C10 4 8 5 7 6L5 8v10l2 2h10l2-2V8l-2-2c-1-1-3-2-5-2z" fill={selected ? "#8B5CF6" : "#CBD5E1"} stroke={selected ? "#7C3AED" : "#94A3B8"} strokeWidth="1.5"/>
+            <text x="12" y="15" textAnchor="middle" fontSize="6" fill={selected ? "#7C3AED" : "#94A3B8"} fontWeight="bold">7</text>
+          </svg>
+        )
+      };
+      return icons[type] || null;
+    };
+
+    // Badge Components
+    const CategoryBadge = ({ category, subcategory }) => {
+      const styles = { attack: "bg-blue-500 text-white", defense: "bg-red-500 text-white", fun: "bg-amber-400 text-amber-900" };
+      const icons = { attack: "⚽", defense: "🛡️", fun: "🎮" };
+      return (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`px-2 py-1 rounded-full text-xs font-bold ${styles[category]}`}>{icons[category]} {category}</span>
+          {subcategory && <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">{subcategory}</span>}
+        </div>
+      );
+    };
+
+    const DifficultyBadge = ({ level }) => {
+      const colors = { beginner: "bg-green-100 text-green-700", intermediate: "bg-yellow-100 text-yellow-700", advanced: "bg-red-100 text-red-700" };
+      return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[level]}`}>{level}</span>;
+    };
+
+    // YouTube Button
+    const YouTubeButton = ({ searchTerms, small = false }) => {
+      const url = createYouTubeSearchUrl(searchTerms);
+      return (
+        <a 
+          href={url}
+          target="_blank" 
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className={`flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium ${small ? 'p-1.5' : 'px-4 py-2 text-sm'}`}
+        >
+          <svg className={small ? "w-4 h-4" : "w-5 h-5"} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+          {!small && "Watch Tutorials"}
+        </a>
+      );
+    };
+
+    // Drill Card
+    const DrillCard = ({ drill, onClick }) => (
+      <div onClick={onClick} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden border-2 border-transparent hover:border-green-400 group">
+        <div className="h-28 bg-gradient-to-br from-green-50 to-emerald-100 p-2 relative">
+          <div className="absolute top-1 left-1 bg-white/90 px-2 py-0.5 rounded-full text-xs text-gray-600 font-medium">{drill.ageGroup}</div>
+          <div className="absolute top-1 right-1">
+            <YouTubeButton searchTerms={drill.youtubeSearch} small={true} />
+          </div>
+          <DrillDiagram drill={drill} />
+        </div>
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-1 mb-1">
+            <h3 className="font-bold text-gray-800 text-sm group-hover:text-green-600 line-clamp-1">{drill.name}</h3>
+            <DifficultyBadge level={drill.difficulty} />
+          </div>
+          <CategoryBadge category={drill.category} subcategory={drill.subcategory} />
+          <p className="text-gray-500 text-xs mt-2 line-clamp-2">{drill.description}</p>
+          <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+            <span>⏱️ {drill.duration}</span>
+            <span>👥 {drill.players}</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    // Drill Modal
+    const DrillModal = ({ drill, onClose }) => {
+      if (!drill) return null;
+      return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-5 text-white relative">
+              <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center">✕</button>
+              <div className="flex items-center gap-2 mb-2">
+                <CategoryBadge category={drill.category} subcategory={drill.subcategory} />
+                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{drill.ageGroup}</span>
+              </div>
+              <h2 className="text-xl font-bold">{drill.name}</h2>
+              <div className="flex items-center gap-3 mt-2 text-green-100 text-sm">
+                <span>⏱️ {drill.duration}</span>
+                <span>👥 {drill.players}</span>
+                <DifficultyBadge level={drill.difficulty} />
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="bg-gray-900 rounded-xl p-4 mb-5">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-white font-medium text-sm">Video Tutorials</p>
+                      <p className="text-gray-400 text-xs">Search: "{drill.youtubeSearch}"</p>
+                    </div>
+                  </div>
+                  <YouTubeButton searchTerms={drill.youtubeSearch} />
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-3 mb-5 h-40">
+                <DrillDiagram drill={drill} />
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-1"><span className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center text-sm">📋</span>Description</h3>
+                  <p className="text-gray-600 text-sm pl-8">{drill.description}</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-1"><span className="w-6 h-6 bg-green-100 rounded flex items-center justify-center text-sm">⚙️</span>Setup</h3>
+                  <p className="text-gray-600 text-sm pl-8">{drill.setup}</p>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-1"><span className="w-6 h-6 bg-amber-100 rounded flex items-center justify-center text-sm">💡</span>Coaching Points</h3>
+                  <ul className="pl-8 space-y-1">
+                    {drill.coaching.map((point, i) => (
+                      <li key={i} className="text-gray-600 text-sm flex items-start gap-2"><span className="text-green-500">✓</span>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2 mb-1"><span className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center text-sm">🎒</span>Equipment</h3>
+                  <div className="flex gap-2 pl-8">
+                    {drill.equipment.map(eq => (
+                      <div key={eq} className="flex flex-col items-center gap-1">
+                        <EquipmentIcon type={eq} selected={true} />
+                        <span className="text-xs text-gray-500">{eq}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // Training Plan Modal
+    const PlanModal = ({ drills, equipment, onClose }) => {
+      const [settings, setSettings] = useState({ duration: 60, focus: 'balanced', ageGroup: 'all', includeWarmup: true, includeCooldown: true });
+      
+      const plan = useMemo(() => {
+        let available = drills.filter(d => d.equipment.every(eq => equipment.includes(eq)));
+        if (settings.ageGroup !== 'all') {
+          available = available.filter(d => {
+            const drillAge = parseInt(d.ageGroup.replace('U', '').replace('+', ''));
+            const filterAge = parseInt(settings.ageGroup.replace('U', ''));
+            return drillAge <= filterAge;
+          });
+        }
+        const warmups = available.filter(d => d.difficulty === 'beginner' && (d.category === 'fun' || d.subcategory === 'dribbling'));
+        const attacks = available.filter(d => d.category === 'attack');
+        const defenses = available.filter(d => d.category === 'defense');
+        const games = available.filter(d => d.category === 'fun');
+        const result = [];
+        if (settings.includeWarmup && warmups.length) result.push({ phase: '🔥 Warm Up', duration: 10, drills: warmups.slice(0, 1) });
+        const mainTime = settings.duration - (settings.includeWarmup ? 10 : 0) - (settings.includeCooldown ? 15 : 0);
+        if (settings.focus === 'attack') {
+          result.push({ phase: '⚔️ Attack Training', duration: mainTime, drills: attacks.slice(0, 3) });
+        } else if (settings.focus === 'defense') {
+          result.push({ phase: '🛡️ Defense Training', duration: mainTime, drills: defenses.slice(0, 3) });
+        } else {
+          result.push({ phase: '⚽ Main Session', duration: mainTime, drills: [...attacks.slice(0, 2), ...defenses.slice(0, 1)] });
+        }
+        if (settings.includeCooldown && games.length) result.push({ phase: '🎮 Fun Game', duration: 15, drills: games.filter(g => g.subcategory === 'team').slice(0, 1) });
+        return result;
+      }, [drills, equipment, settings]);
+
+      return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-5 text-white relative">
+              <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">✕</button>
+              <h2 className="text-xl font-bold">📋 Training Plan Generator</h2>
+              <p className="text-purple-100 text-sm">Create a complete session in seconds</p>
+            </div>
+            <div className="p-5">
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                  <select value={settings.duration} onChange={e => setSettings(s => ({ ...s, duration: +e.target.value }))} className="w-full p-2 border rounded-lg text-sm">
+                    <option value={45}>45 mins</option>
+                    <option value={60}>60 mins</option>
+                    <option value={75}>75 mins</option>
+                    <option value={90}>90 mins</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Focus</label>
+                  <select value={settings.focus} onChange={e => setSettings(s => ({ ...s, focus: e.target.value }))} className="w-full p-2 border rounded-lg text-sm">
+                    <option value="balanced">Balanced</option>
+                    <option value="attack">Attack</option>
+                    <option value="defense">Defense</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Group</label>
+                  <select value={settings.ageGroup} onChange={e => setSettings(s => ({ ...s, ageGroup: e.target.value }))} className="w-full p-2 border rounded-lg text-sm">
+                    <option value="all">All Ages</option>
+                    <option value="U8">U6-U8</option>
+                    <option value="U10">U9-U10</option>
+                    <option value="U12">U11-U12</option>
+                    <option value="U14">U13-U14</option>
+                  </select>
+                </div>
+                <div className="flex flex-col justify-end gap-1">
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.includeWarmup} onChange={e => setSettings(s => ({ ...s, includeWarmup: e.target.checked }))}/>Warm Up</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.includeCooldown} onChange={e => setSettings(s => ({ ...s, includeCooldown: e.target.checked }))}/>Cool Down</label>
+                </div>
+              </div>
+              <div className="border-t pt-4">
+                <h3 className="font-bold text-gray-800 mb-3">Your {settings.duration} Minute Session</h3>
+                <div className="space-y-3">
+                  {plan.map((phase, i) => (
+                    <div key={i} className="border rounded-xl overflow-hidden">
+                      <div className="bg-gray-50 px-3 py-2 flex justify-between items-center">
+                        <span className="font-medium text-gray-800">{phase.phase}</span>
+                        <span className="text-gray-500 text-sm">{phase.duration} mins</span>
+                      </div>
+                      <div className="p-2 space-y-2">
+                        {phase.drills.map(drill => (
+                          <div key={drill.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                            <div className="w-16 h-10 bg-green-50 rounded overflow-hidden flex-shrink-0">
+                              <DrillDiagram drill={drill} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-800 text-sm truncate">{drill.name}</h4>
+                              <p className="text-xs text-gray-500">{drill.duration}</p>
+                            </div>
+                            <YouTubeButton searchTerms={drill.youtubeSearch} small={true} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // Main App
+    function App() {
+      const [equipment, setEquipment] = useState(['cones', 'balls', 'goals', 'bibs']);
+      const [category, setCategory] = useState('all');
+      const [subcategory, setSubcategory] = useState('all');
+      const [ageFilter, setAgeFilter] = useState('all');
+      const [selectedDrill, setSelectedDrill] = useState(null);
+      const [showPlan, setShowPlan] = useState(false);
+      const [search, setSearch] = useState('');
+
+      const subcategories = {
+        attack: ['all', 'shooting', 'passing', 'dribbling', 'movement'],
+        defense: ['all', 'individual', 'team', 'goalkeeping'],
+        fun: ['all', 'dribbling', 'shooting', 'team']
+      };
+
+      const filteredDrills = useMemo(() => {
+        return drillsDatabase.filter(d => {
+          const hasEquip = d.equipment.every(eq => equipment.includes(eq));
+          const matchCat = category === 'all' || d.category === category;
+          const matchSub = subcategory === 'all' || d.subcategory === subcategory;
+          const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) || d.description.toLowerCase().includes(search.toLowerCase());
+          let matchAge = true;
+          if (ageFilter !== 'all') {
+            const drillAge = parseInt(d.ageGroup.replace('U', '').replace('+', ''));
+            const filterAge = parseInt(ageFilter.replace('U', ''));
+            matchAge = drillAge <= filterAge;
+          }
+          return hasEquip && matchCat && matchSub && matchSearch && matchAge;
+        });
+      }, [equipment, category, subcategory, search, ageFilter]);
+
+      useEffect(() => { setSubcategory('all'); }, [category]);
+
+      const drillCounts = {
+        all: drillsDatabase.length,
+        attack: drillsDatabase.filter(d => d.category === 'attack').length,
+        defense: drillsDatabase.filter(d => d.category === 'defense').length,
+        fun: drillsDatabase.filter(d => d.category === 'fun').length
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
+          <header className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">⚽</div>
+                  <div>
+                    <h1 className="text-lg font-bold">Junior Football Coach</h1>
+                    <p className="text-green-100 text-xs">{drillsDatabase.length} Drills with YouTube Tutorials</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowPlan(true)} className="bg-white text-green-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-50 flex items-center gap-2">
+                  📋 Generate Plan
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto px-4 py-6">
+            <section className="bg-white rounded-xl shadow p-4 mb-6">
+              <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><span className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center text-sm">🎒</span>Equipment Available</h2>
+              <div className="flex flex-wrap gap-3">
+                {['cones', 'balls', 'goals', 'bibs'].map(eq => (
+                  <button key={eq} onClick={() => setEquipment(prev => prev.includes(eq) ? prev.filter(e => e !== eq) : [...prev, eq])}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${equipment.includes(eq) ? 'border-green-400 bg-green-50' : 'border-gray-200'}`}>
+                    <EquipmentIcon type={eq} selected={equipment.includes(eq)} />
+                    <span className={`font-medium capitalize text-sm ${equipment.includes(eq) ? 'text-green-700' : 'text-gray-600'}`}>{eq}</span>
+                    {equipment.includes(eq) && <span className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="flex flex-wrap gap-3 mb-6 items-center">
+              <div className="flex bg-white rounded-lg p-1 shadow">
+                {[{key:'all',label:'All',icon:'📚'}, {key:'attack',label:'Attack',icon:'⚔️'}, {key:'defense',label:'Defense',icon:'🛡️'}, {key:'fun',label:'Fun',icon:'🎮'}].map(c => (
+                  <button key={c.key} onClick={() => setCategory(c.key)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 ${category === c.key ? 'bg-green-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    {c.icon} <span className="hidden sm:inline">{c.label}</span>
+                    <span className="text-xs opacity-70">({drillCounts[c.key]})</span>
+                  </button>
+                ))}
+              </div>
+              
+              {category !== 'all' && (
+                <div className="flex bg-white rounded-lg p-1 shadow">
+                  {subcategories[category].map(sub => (
+                    <button key={sub} onClick={() => setSubcategory(sub)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize ${subcategory === sub ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <select value={ageFilter} onChange={e => setAgeFilter(e.target.value)} className="bg-white border rounded-lg px-3 py-2 text-sm shadow">
+                <option value="all">All Ages</option>
+                <option value="U8">U6-U8</option>
+                <option value="U10">U9-U10</option>
+                <option value="U12">U11-U12</option>
+                <option value="U14">U13-U14</option>
+              </select>
+
+              <div className="flex-1 min-w-48">
+                <input type="text" placeholder="Search drills..." value={search} onChange={e => setSearch(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border bg-white shadow text-sm"/>
+              </div>
+              
+              <div className="text-gray-500 bg-white px-3 py-2 rounded-lg shadow text-sm">{filteredDrills.length} drills</div>
+            </section>
+
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div className="bg-white rounded-lg p-3 shadow text-center">
+                <div className="text-2xl font-bold text-blue-600">{drillsDatabase.filter(d => d.category === 'attack').length}</div>
+                <div className="text-xs text-gray-500">Attack Drills</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 shadow text-center">
+                <div className="text-2xl font-bold text-red-600">{drillsDatabase.filter(d => d.category === 'defense').length}</div>
+                <div className="text-xs text-gray-500">Defense Drills</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 shadow text-center">
+                <div className="text-2xl font-bold text-amber-600">{drillsDatabase.filter(d => d.category === 'fun').length}</div>
+                <div className="text-xs text-gray-500">Fun Games</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 shadow text-center">
+                <div className="text-2xl font-bold text-purple-600">{drillsDatabase.filter(d => d.difficulty === 'advanced').length}</div>
+                <div className="text-xs text-gray-500">Advanced (U12+)</div>
+              </div>
+            </section>
+
+            {filteredDrills.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredDrills.map(drill => (
+                  <DrillCard key={drill.id} drill={drill} onClick={() => setSelectedDrill(drill)} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-xl shadow">
+                <div className="text-5xl mb-3">🤔</div>
+                <h3 className="text-lg font-bold text-gray-800 mb-1">No drills found</h3>
+                <p className="text-gray-500 text-sm">Try selecting more equipment or changing filters</p>
+              </div>
+            )}
+          </main>
+
+          <footer className="bg-gray-800 text-gray-400 py-6 mt-8">
+            <div className="max-w-7xl mx-auto px-4 text-center text-sm">
+              <p>Made with ❤️ for junior football coaches</p>
+              <p className="mt-1">{drillsDatabase.length} drills • YouTube tutorials for every drill • Ages U6 to U14</p>
+            </div>
+          </footer>
+
+          {selectedDrill && <DrillModal drill={selectedDrill} onClose={() => setSelectedDrill(null)} />}
+          {showPlan && <PlanModal drills={drillsDatabase} equipment={equipment} onClose={() => setShowPlan(false)} />}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
